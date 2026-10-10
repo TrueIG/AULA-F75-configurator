@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>F75 Configurator</title>
+    <meta
+      name="description"
+      content="Unofficial browser configurator for the AULA F75 keyboard: lighting, per-key colors, live animations, key remapping and profiles."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='14' width='56' height='36' rx='7' fill='%234c8dff'/%3E%3Cg fill='%23fff'%3E%3Crect x='11' y='21' width='8' height='7' rx='2'/%3E%3Crect x='22' y='21' width='8' height='7' rx='2'/%3E%3Crect x='33' y='21' width='8' height='7' rx='2'/%3E%3Crect x='44' y='21' width='9' height='7' rx='2'/%3E%3Crect x='11' y='32' width='42' height='7' rx='2'/%3E%3C/g%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div><b data-t="appName"></b><small data-t="appTag"></small></div>
+      </div>
+      <span id="stConn" class="chip" data-t="disconnected"></span>
+      <span id="stBattery" class="chip" hidden></span>
+      <span id="stSleep" class="chip warn" hidden data-t="asleep"></span>
+      <span class="spacer"></span>
+      <button id="bReload" hidden data-t="reload"></button>
+      <div class="lang" role="group" aria-label="Language">
+        <button data-lang="pt">PT</button><button data-lang="en">EN</button>
+      </div>
+    </header>
+
+    <section id="welcome" class="welcome">
+      <h1 data-t="welcomeTitle"></h1>
+      <p data-t="welcomeText"></p>
+      <div class="steps">
+        <div><b>1</b><span data-t="step1"></span></div>
+        <div><b>2</b><span data-t="step2"></span></div>
+        <div><b>3</b><span data-t="step3"></span></div>
+      </div>
+      <div id="noHid" class="warnbox" hidden data-t="noHid"></div>
+      <p>
+        <button id="bConnect" class="primary big" data-t="connect"></button>
+      </p>
+      <p class="muted" data-t="welcomeReq"></p>
+      <details
+        id="welcomeHelp"
+        class="panel"
+        style="text-align: left; margin-top: 18px"
+      >
+        <summary
+          data-t="needHelp"
+          style="cursor: pointer; color: var(--accent)"
+        ></summary>
+        <div class="helpBox" style="margin-top: 12px"></div>
+      </details>
+      <p class="legal" data-t="legal"></p>
+    </section>
+
+    <template id="helpTpl">
+      <h3 data-t="hReqTitle"></h3>
+      <p class="muted" data-t="hReq"></p>
+      <h3 data-t="hLinuxTitle"></h3>
+      <p class="muted" data-t="hLinux"></p>
+      <pre class="cmd udevCmd"></pre>
+      <p class="muted" data-t="hLinux2"></p>
+      <h3 data-t="hTroubleTitle"></h3>
+      <ul class="muted">
+        <li data-t="hT1"></li>
+        <li data-t="hT2"></li>
+        <li data-t="hT3"></li>
+        <li data-t="hT4"></li>
+      </ul>
+      <h3 data-t="hPrivacyTitle"></h3>
+      <p class="muted" data-t="hPrivacy"></p>
+      <h3 data-t="hAboutTitle"></h3>
+      <p class="muted" data-t="hAbout"></p>
+    </template>
+
+    <nav id="tabs" hidden>
+      <button data-tab="light" class="on" data-t="tabLight"></button>
+      <button data-tab="anim" data-t="tabAnim"></button>
+      <button data-tab="keys" data-t="tabKeys"></button>
+      <button data-tab="profiles" data-t="tabProfiles"></button>
+      <button data-tab="settings" data-t="tabSettings"></button>
+      <button data-tab="help" data-t="tabHelp"></button>
+    </nav>
+
+    <main id="app" hidden>
+      <section data-page="light">
+        <div class="grid-l">
+          <div class="panel">
+            <h2 data-t="effect"></h2>
+            <div id="effects" class="tiles"></div>
+          </div>
+          <div class="panel">
+            <h2>
+              <span data-t="effectSettings"></span> · <span id="effName"></span>
+            </h2>
+            <div style="display: grid; gap: 14px">
+              <label class="f" id="wBright"
+                ><span data-t="brightness"></span>
+                <span class="row"
+                  ><input
+                    type="range"
+                    id="rBright"
+                    min="0"
+                    max="9"
+                    step="1" /><span id="vBright" class="val"></span></span
+              ></label>
+              <label class="f" id="wSpeed"
+                ><span data-t="speed"></span>
+                <span class="row"
+                  ><input
+                    type="range"
+                    id="rSpeed"
+                    min="0"
+                    max="4"
+                    step="1" /><span id="vSpeed" class="val"></span></span
+              ></label>
+              <div id="wColor">
+                <div class="f" data-t="color"></div>
+                <div id="palette" class="row" style="margin-top: 6px"></div>
+                <div class="row" style="margin-top: 8px">
+                  <button id="bPalEdit" data-t="changeColor"></button>
+                  <input type="color" id="palEdit" hidden />
+                </div>
+              </div>
+              <p class="hint" id="effNote" style="margin: 0"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 14px">
+          <h2 data-t="perKey"></h2>
+          <div class="row">
+            <label class="f"
+              ><span data-t="color1"></span
+              ><input type="color" id="pick" value="#ff3000"
+            /></label>
+            <label class="f"
+              ><span data-t="color2"></span
+              ><input type="color" id="pick2" value="#0050ff"
+            /></label>
+            <span id="swatches" class="row" style="align-self: end"></span>
+          </div>
+          <div class="row" style="margin-top: 10px">
+            <button id="bPaintSel" data-t="paintSel"></button>
+            <button id="bPaintAll" data-t="paintAll"></button>
+            <button id="bSelAll" data-t="selAll"></button>
+            <button id="bSelNone" data-t="selNone"></button>
+            <span class="spacer"></span>
+            <span class="muted" data-t="presets"></span>
+            <button data-preset="rainbow" data-t="presetRainbow"></button>
+            <button data-preset="gradient" data-t="presetGradient"></button>
+          </div>
+          <div id="kbColors" class="kb"></div>
+          <p class="hint" data-t="perKeyHint"></p>
+        </div>
+      </section>
+
+      <section data-page="anim" hidden>
+        <div class="grid-l">
+          <div class="panel">
+            <h2 data-t="animTitle"></h2>
+            <div id="animList" class="tiles"></div>
+            <p class="hint" data-t="animHint"></p>
+          </div>
+          <div class="panel">
+            <h2>
+              <span data-t="settings"></span> · <span id="animName"></span>
+            </h2>
+            <div style="display: grid; gap: 14px">
+              <label class="f"
+                ><span data-t="speed"></span>
+                <span class="row"
+                  ><input
+                    type="range"
+                    id="aSpeed"
+                    min="0.2"
+                    max="3"
+                    step="0.1"
+                    value="1" /><span id="vASpeed" class="val"></span></span
+              ></label>
+              <label class="f"
+                ><span data-t="brightness"></span>
+                <span class="row"
+                  ><input
+                    type="range"
+                    id="aBright"
+                    min="0.1"
+                    max="1"
+                    step="0.05"
+                    value="1" /><span id="vABright" class="val"></span></span
+              ></label>
+              <div class="row" id="wAnimColors">
+                <label class="f"
+                  ><span data-t="color1"></span
+                  ><input type="color" id="aC1" value="#ff2a00"
+                /></label>
+                <label class="f"
+                  ><span data-t="color2"></span
+                  ><input type="color" id="aC2" value="#0050ff"
+                /></label>
+              </div>
+              <div id="wAudio" style="display: grid; gap: 12px" hidden>
+                <label class="f"
+                  ><span data-t="soundSource"></span>
+                  <select id="aSrc">
+                    <option value="tab" data-t="srcTab"></option>
+                    <option value="mic" data-t="srcMic"></option></select
+                ></label>
+                <label class="f"
+                  ><span data-t="sensitivity"></span>
+                  <span class="row"
+                    ><input
+                      type="range"
+                      id="aGain"
+                      min="0.5"
+                      max="5"
+                      step="0.1"
+                      value="2" /><span id="vAGain" class="val"></span></span
+                ></label>
+              </div>
+              <div class="row">
+                <button id="bAnimStart" class="primary" data-t="start"></button>
+                <button id="bAnimStop" data-t="stop"></button>
+                <span id="animState" class="muted"></span>
+              </div>
+              <p class="hint" id="animHint2" style="margin: 0"></p>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top: 14px">
+          <h2 data-t="preview"></h2>
+          <div id="kbAnim" class="kb"></div>
+        </div>
+      </section>
+
+      <section data-page="keys" hidden>
+        <div class="panel">
+          <div class="row" style="justify-content: space-between">
+            <h2 style="margin: 0" data-t="keymap"></h2>
+            <div class="seg" id="layerSeg">
+              <button data-layer="0" class="on" data-t="layerNormal"></button>
+              <button data-layer="1" data-t="layerFn"></button>
+            </div>
+          </div>
+          <div id="kbKeys" class="kb"></div>
+          <p class="hint" data-t="keysHint"></p>
+        </div>
+        <div class="panel">
+          <h2><span data-t="keyFunction"></span> <span id="kName"></span></h2>
+          <div id="kNone" class="muted" data-t="selectKey"></div>
+          <div id="kEdit" hidden style="display: grid; gap: 12px">
+            <div class="muted">
+              <span data-t="now"></span>
+              <b id="kCur" style="color: var(--text)"></b>
+            </div>
+            <div class="row" style="align-items: end">
+              <label class="f"
+                ><span data-t="type"></span
+                ><select id="kType"></select
+              ></label>
+              <label class="f" id="wKey"
+                ><span data-t="keyLabel"></span
+                ><select id="kKey"></select
+              ></label>
+              <label class="f" id="wList"
+                ><span data-t="functionLabel"></span
+                ><select id="kList"></select
+              ></label>
+            </div>
+            <div class="row" id="wMods">
+              <span class="muted" data-t="together"></span>
+            </div>
+            <div class="row">
+              <button id="bKeyApply" class="primary" data-t="applyKey"></button>
+              <button id="bKeyOrig" data-t="keyOrig"></button>
+              <button id="bLayerOrig" data-t="layerOrig"></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-page="profiles" hidden>
+        <div class="panel">
+          <h2 data-t="tabProfiles"></h2>
+          <p class="muted" style="margin-top: 0" data-t="profilesHint"></p>
+          <div class="row">
+            <button id="bProfSave" class="primary" data-t="saveAs"></button>
+            <button id="bProfImport" data-t="importProfile"></button>
+            <button id="bProfExportCur" data-t="exportCurrent"></button>
+            <input
+              type="file"
+              id="fImport"
+              accept=".json,application/json"
+              hidden
+            />
+          </div>
+          <div id="plist" class="plist" style="margin-top: 14px"></div>
+        </div>
+      </section>
+
+      <section data-page="settings" hidden>
+        <div class="panel">
+          <h2 data-t="powerTitle"></h2>
+          <label class="f" style="max-width: 340px"
+            ><span data-t="sleepLabel"></span
+            ><select id="sleep"></select
+          ></label>
+          <p class="hint" data-t="sleepHint"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="resetTitle"></h2>
+          <p class="muted" style="margin: 0" data-t="resetText"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="macrosTitle"></h2>
+          <p class="muted" style="margin: 0" data-t="macrosText"></p>
+        </div>
+      </section>
+
+      <section data-page="help" hidden>
+        <div class="panel helpBox"></div>
+      </section>
+      <p class="legal" data-t="legal"></p>
+    </main>
+
+    <footer class="bar" id="footer" hidden>
+      <div class="progress" id="progress"></div>
+      <div class="row">
+        <span id="pending" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="bDiscard" data-t="discard"></button>
+        <button id="bSave" class="primary" data-t="save"></button>
+      </div>
+    </footer>
+
+    <div id="toasts" aria-live="polite"></div>
+
+    <script src="src/layout.js"></script>
+    <script src="src/protocol.js"></script>
+    <script src="src/effects.js"></script>
+    <script src="src/keycodes.js"></script>
+    <script src="src/i18n.js"></script>
+    <script src="src/util.js"></script>
+    <script src="src/transport.js"></script>
+    <script src="src/state.js"></script>
+    <script src="src/lighting.js"></script>
+    <script src="src/keyboard-view.js"></script>
+    <script src="src/colors.js"></script>
+    <script src="src/keys.js"></script>
+    <script src="src/animations.js"></script>
+    <script src="src/profiles.js"></script>
+    <script src="src/main.js"></script>
+  </body>
+</html>
